@@ -73,6 +73,7 @@ class NewVisitorTest(LiveServerTestCase):
         intputbox = self.browser.find_element_by_id("id_new_item")
         intputbox.send_keys("Buy peacock feathers")
         intputbox.send_keys(Keys.ENTER)
+        self.wait_for_row_in_table("1: Buy peacock feathers")
 
         # Ela percebe que sua lista tem um URL único
         edith_list_url = self.browser.current_url
