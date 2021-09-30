@@ -48,7 +48,7 @@ class ItemModelTest(TestCase):
         self.assertEqual(second_saved_item.text, "Item the second")
 
 
-class ListViewTests(TestCase):
+class ListViewTest(TestCase):
     def test_uses_list_template(self):
         response = self.client.get("/lists/the-only-list-in-the-world/")
         self.assertTemplateUsed(response, "list.html")
