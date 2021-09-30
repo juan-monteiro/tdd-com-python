@@ -2,22 +2,33 @@ import time
 from django.test import LiveServerTestCase
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import WebDriverException
+
+MAX_WAIT = 10
 
 
 class NewVisitorTest(LiveServerTestCase):
     def setUp(self):
-        options = webdriver.FirefoxOptions()
-        options.headless = True
-        self.browser = webdriver.Firefox(options=options)
+        self.options = webdriver.FirefoxOptions()
+        self.options.headless = True
+        self.browser = webdriver.Firefox(options=self.options)
 
     def tearDown(self):
         # Satisfeita, ela volta a dormir.
         self.browser.quit()
 
-    def check_for_row_in_list_table(self, row_text):
-        table = self.browser.find_element_by_id("id_list_table")
-        rows = table.find_elements_by_tag_name("tr")
-        self.assertIn(row_text, [row.text for row in rows])
+    def wait_for_row_in_table(self, row_text):
+        start_time = time.time()
+        while True:
+            try:
+                table = self.browser.find_element_by_id("id_list_table")
+                rows = table.find_elements_by_tag_name("tr")
+                self.assertIn(row_text, [row.text for row in rows])
+                return
+            except (AssertionError, WebDriverException) as e:
+                if time.time() - start_time > MAX_WAIT:
+                    raise e
+                time.sleep(0.5)
 
     def test_can_start_a_list_and_retrieve_it_later(self):
         # Edith ouviu falar de uma nova aplicação online interessante para
@@ -41,8 +52,7 @@ class NewVisitorTest(LiveServerTestCase):
         # Quando ela teclar enter, a página é atualizada, e agora a página lista
         # "1: Buy peakock feathers" como um item em uma lista de tarefas
         inputbox.send_keys(Keys.ENTER)
-        time.sleep(1)
-        self.check_for_row_in_list_table("1: Buy peacock feathers")
+        self.wait_for_row_in_table("1: Buy peacock feathers")
 
         # Ainda continua havendo uma caixa de texto convidando-a a acrescentar outro
         # item. Ela insere "Use peacock feathers to make a fly" (usar penas de pavão
@@ -50,14 +60,53 @@ class NewVisitorTest(LiveServerTestCase):
         inputbox = self.browser.find_element_by_id("id_new_item")
         inputbox.send_keys("Use the peacock feathres to make it fly")
         inputbox.send_keys(Keys.ENTER)
-        time.sleep(1)
 
         # A página é atualizada novamente e agora mostra os dois itens em duas lista.
-        self.check_for_row_in_list_table("1: Buy peacock feathers")
-        self.check_for_row_in_list_table("2: Use the peacock feathres to make it fly")
+        self.wait_for_row_in_table("1: Buy peacock feathers")
+        self.wait_for_row_in_table("2: Use the peacock feathres to make it fly")
 
-        # Edith se pergunta se o site lembrará de sua lista. Então ela nota que o
-        # site gerou um URL único para ela -- há um pequeno texto explicativo para isso.
-        self.fail("Finish the test!")
+        # Satisfeita, ela volta a dormir
 
-        # Ela acessa esse URL - sua lista de tarefas continua lá.
+    def test_multiple_users_can_start_list_at_different_urls(self):
+        # Edith inicia uma nova lista de tarefas
+        self.browser.get(self.live_server_url)
+        intputbox = self.browser.find_element_by_id("id_new_item")
+        intputbox.send_keys("Buy peacock feathers")
+        intputbox.send_keys(Keys.ENTER)
+
+        # Ela percebe que sua lista tem um URL único
+        edith_list_url = self.browser.current_url
+        self.assertRegex(edith_list_url, "/lists/.+")
+
+        # Agora um novo usuário, Francis, chega ao site.
+
+        ## Eusamos uma nova sessão do navegador para garantir que nenhuma informação
+        ## de Edith está vindo de cookies etc
+        self.browser.quit()
+        self.browser = webdriver.Firefox(options=self.options)
+
+        # Francis acessa a página inicial. Não há nenhum sinal da lista de Edith
+        self.browser.get(self.live_server_url)
+        page_text = self.browser.find_element_by_tag_name("body").text
+        self.assertNotIn("Buy peacock feathers", page_text)
+        self.assertNotIn("make a fly", page_text)
+
+        # Fracins inicia uma nova lista inserido um item novo. Ele
+        # é menos interessante que Edith...
+
+        intputbox = self.browser.find_element_by_id("id_new_item")
+        intputbox.send_keys("Buy milk")
+        intputbox.send_keys(Keys.ENTER)
+        self.wait_for_row_in_table("1: Buy milk")
+
+        # Francis obtém seu próprio URL exclusivo
+        francis_list_url = self.browser.current_url
+        self.assertRegex(francis_list_url, "/lists/.+")
+        self.assertNotEqual(francis_list_url, edith_list_url)
+
+        # Novamente, não há nenhum sinal da lista de Edith
+        page_text = self.browser.find_element_by_tag_name("body").text
+        self.assertNotIn("Buy peacock feathers", page_text)
+        self.assertIn("Buy milk", page_text)
+
+        # Satisfeitos, ambos voltam a dormir
