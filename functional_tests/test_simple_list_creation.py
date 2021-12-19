@@ -16,7 +16,7 @@ class NewVisitorTest(FunctionalTests):
         self.assertIn("To-Do", header_text)
 
         # Ela é convidada a inserir um item de tarefa imediatamente.
-        inputbox = self.browser.find_element_by_id("id_new_item")
+        inputbox = self.get_item_input_box()
         self.assertEqual(inputbox.get_attribute("placeholder"), "Enter a to-do item")
 
         # Ela digita "Buy peacock feathers" (Comprar penas de pavão) em uma caixa
@@ -31,7 +31,7 @@ class NewVisitorTest(FunctionalTests):
         # Ainda continua havendo uma caixa de texto convidando-a a acrescentar outro
         # item. Ela insere "Use peacock feathers to make a fly" (usar penas de pavão
         # para fazer um fly - Edith é bem metódica).
-        inputbox = self.browser.find_element_by_id("id_new_item")
+        inputbox = self.get_item_input_box()
         inputbox.send_keys("Use the peacock feathres to make it fly")
         inputbox.send_keys(Keys.ENTER)
 
@@ -44,7 +44,7 @@ class NewVisitorTest(FunctionalTests):
     def test_multiple_users_can_start_list_at_different_urls(self):
         # Edith inicia uma nova lista de tarefas
         self.browser.get(self.live_server_url)
-        intputbox = self.browser.find_element_by_id("id_new_item")
+        intputbox = self.get_item_input_box()
         intputbox.send_keys("Buy peacock feathers")
         intputbox.send_keys(Keys.ENTER)
         self.wait_for_row_in_table("1: Buy peacock feathers")
@@ -69,7 +69,7 @@ class NewVisitorTest(FunctionalTests):
         # Fracins inicia uma nova lista inserido um item novo. Ele
         # é menos interessante que Edith...
 
-        intputbox = self.browser.find_element_by_id("id_new_item")
+        intputbox = self.get_item_input_box()
         intputbox.send_keys("Buy milk")
         intputbox.send_keys(Keys.ENTER)
         self.wait_for_row_in_table("1: Buy milk")
