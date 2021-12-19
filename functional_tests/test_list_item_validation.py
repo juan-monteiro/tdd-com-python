@@ -1,4 +1,5 @@
 from .base import FunctionalTests
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
 
@@ -9,17 +10,18 @@ class ItemValidationTest(FunctionalTests):
         self.browser.get(self.live_server_url)
         self.get_item_input_box().send_keys(Keys.ENTER)
 
-        # A página inicial é atualizada e há uma mensagem de erro informando
-        # que itens da lista não podem estar em branco
+        # O navegador impede e não carrega a página
         self.wait_for(
-            lambda: self.assertEqual(
-                self.browser.find_element_by_css_selector(".has-error").text,
-                "You can't have an empty list item",
-            )
+            lambda: self.browser.find_element_by_css_selector("#id_text:invalid").text
         )
 
-        # Ela tenta novamente com um texto para o item, e isso agora funciona
+        # Ela tenta novamente com um texto para o item, e o erro desaparece
         self.get_item_input_box().send_keys("Buy milk")
+        self.wait_for(
+            lambda: self.browser.find_elements(By.CSS_SELECTOR, "#id_text:valid")
+        )
+
+        # E finalmente ela pode enviar o formulário
         self.get_item_input_box().send_keys(Keys.ENTER)
         self.wait_for_row_in_table("1: Buy milk")
 
@@ -27,12 +29,9 @@ class ItemValidationTest(FunctionalTests):
         # branco na lista
         self.get_item_input_box().send_keys(Keys.ENTER)
 
-        # Ela recebe um aviso semelhante na página da lista
+        # E novamente o navegador a impede
         self.wait_for(
-            lambda: self.assertEqual(
-                self.browser.find_element_by_css_selector(".has-error").text,
-                "You can't have an empty list item",
-            )
+            lambda: self.browser.find_element_by_css_selector("#id_text:invalid").text
         )
 
         # E ela pode corrigir isso preenchendo o item com um texto
