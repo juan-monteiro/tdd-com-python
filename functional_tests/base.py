@@ -2,6 +2,7 @@ import os
 import time
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.common.exceptions import WebDriverException
 
 MAX_WAIT = 10
@@ -26,7 +27,7 @@ class FunctionalTests(StaticLiveServerTestCase):
         while True:
             try:
                 table = self.browser.find_element_by_id("id_list_table")
-                rows = table.find_elements_by_tag_name("tr")
+                rows = table.find_elements(By.TAG_NAME, "tr")
                 self.assertIn(row_text, [row.text for row in rows])
                 return
             except (AssertionError, WebDriverException) as e:
